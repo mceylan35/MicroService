@@ -7,6 +7,8 @@ using Services.Catalog.API.Settings;
 using System.Reflection.PortableExecutable;
 using System.Text.Json.Serialization;
 using System.Text.Json;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Mvc.Authorization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -38,7 +40,10 @@ builder.Services.AddControllers(options =>
     options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
 
 });
-
+builder.Services.AddControllers(opt =>
+{
+    opt.Filters.Add(new AuthorizeFilter());
+});
 var configurationBuilder = new ConfigurationBuilder()
         .AddEnvironmentVariables();
 
@@ -74,6 +79,13 @@ builder.Services.AddSwaggerGen(c =>
             {
                 { jwtSecurityScheme, Array.Empty<string>() }
             });
+
+    builder.Services.AddAuthentication().AddJwtBearer("GatewayAuthenticationScheme", options =>
+    {
+        options.Authority =builder.Configuration["IdentityServerURL"];
+        options.Audience = "resource_gateway";
+        options.RequireHttpsMetadata = false;
+    });
 });
 
 
@@ -95,7 +107,8 @@ app.UseStaticFiles();
 app.UseHttpLogging();
 app.UseCors();
 app.UseHttpsRedirection();
-app.UseAuthentication(); 
+app.UseAuthentication();
+
 app.MapControllers();
 app.Run();
  

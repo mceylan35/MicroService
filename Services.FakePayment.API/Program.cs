@@ -12,31 +12,31 @@ builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-var services = builder.Services;
-services.AddMassTransit(x =>
+builder.Services.AddMassTransit(x =>
 {
     // Default Port : 5672
-    //x.r((context, cfg) =>
-    //{
-    //    cfg.Host(Configuration["RabbitMQUrl"], "/", host =>
-    //    {
-    //        host.Username("guest");
-    //        host.Password("guest");
-    //    });
-    //});
-});
+    x.UsingRabbitMq((context, cfg) =>
+    {
+        cfg.Host(builder.Configuration["RabbitMQUrl"], "/", host =>
+        {
+            host.Username("guest");
+            host.Password("guest");
+        });
+    });
+});//.AddMassTransitHostedService();
 
-services.AddMassTransitHostedService();
+//builder.Services.AddMassTransitHostedService();
+
 var requireAuthorizePolicy = new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build();
 JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Remove("sub");
-services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
 {
     options.Authority = builder.Configuration["IdentityServerURL"];
     options.Audience = "resource_payment";
     options.RequireHttpsMetadata = false;
 });
 
-services.AddControllers(opt =>
+builder.Services.AddControllers(opt =>
 {
     opt.Filters.Add(new AuthorizeFilter(requireAuthorizePolicy));
 });
